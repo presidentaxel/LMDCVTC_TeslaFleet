@@ -1,0 +1,25 @@
+# Dockerfile de debug pour tester le build
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copier tout
+COPY . .
+
+# Installer les dépendances
+RUN npm install
+
+# Variables d'environnement
+ARG VITE_API_BASE=http://localhost:8000/api
+ENV VITE_API_BASE=${VITE_API_BASE}
+
+# Tester le build
+RUN npm run build
+
+# Vérifier le contenu
+RUN ls -la dist/
+RUN cat dist/index.html || echo "No index.html found"
+
+# Lancer en mode dev pour debug
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+

@@ -1,0 +1,275 @@
+# ============================================
+# Python / Backend
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+*.log
+.venv/
+venv/
+ENV/
+env/
+.venv
+*.pyc
+*.pyo
+*.pyd
+
+# ============================================
+# Node.js / Frontend
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+pids
+*.pid
+*.seed
+*.pid.lock
+lib-cov
+coverage
+*.lcov
+.nyc_output
+.grunt
+bower_components
+.lock-wscript
+build/Release
+.npm
+.eslintcache
+.stylelintcache
+.node_repl_history
+*.tgz
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state
+.yarn/install-state.gz
+.pnp.*
+dist/
+dist-ssr/
+*.local
+
+# ============================================
+# Environnement et Secrets
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+*.env
+!.env.example
+backend/.env
+frontend/.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets/
+**/secrets/
+**/keys/private/
+!**/keys/private/.gitkeep
+backend/app/keys/private/*
+!backend/app/keys/private/.gitkeep
+
+# ============================================
+# Docker
+# ============================================
+*.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ============================================
+# IDE et Éditeurs
+# ============================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ / PyCharm / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# OS
+# ============================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Build et Déploiement
+# ============================================
+# Build outputs
+build/
+dist/
+*.tar.gz
+*.zip
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ============================================
+# Tests
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ============================================
+# Monitoring et Analytics
+# ============================================
+monitoring/prometheus/data/
+monitoring/grafana/data/
+
+# ============================================
+# Temporaires
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+.cache/
+tmp/
+temp/
+
+# ============================================
+# Spécifique au projet
+# ============================================
+# Clés privées Tesla
+backend/app/keys/private/*.pem
+backend/app/keys/private/*.key
+!backend/app/keys/private/.gitkeep
+
+# Fichiers de configuration locaux
+docker-compose.override.yml
+*.local.yml
+
+# Database locale
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+
+# Railway / Vercel
+railway.json
+.vercel
+.railway
+
+# ============================================
+# Documentation générée
+# ============================================
+docs/_build/
+site/
+
