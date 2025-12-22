@@ -1,0 +1,89 @@
+# Configuration Docker Compose pour la Production
+# Utilise Supabase pour le stockage des tokens (pas besoin de Redis)
+# Copiez ce fichier vers docker-compose.prod.yml et configurez vos variables
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      # SUPABASE (stockage des tokens - remplace Redis)
+      SUPABASE_URL: https://votre-projet.supabase.co
+      SUPABASE_KEY: votre-service-role-key
+      SUPABASE_TOKENS_TABLE: tokens
+      TOKEN_STORE_TYPE: supabase
+      
+      # Tesla Partner Credentials (M2M)
+      TESLA_CLIENT_ID: your_partner_client_id
+      TESLA_CLIENT_SECRET: your_partner_client_secret
+      
+      # Tesla Third-Party OAuth
+      TP_CLIENT_ID: your_third_party_client_id
+      TP_CLIENT_SECRET: your_third_party_client_secret
+      TP_REDIRECT_URI: https://votre-domaine.com/auth/callback
+      
+      # Frontend URL (votre domaine public)
+      FRONTEND_URL: https://votre-domaine.com
+      
+      # CORS Origins (votre domaine public uniquement)
+      CORS_ORIGINS: https://votre-domaine.com
+      
+      # ⚠️ IMPORTANT: Configuration des clés pour la production
+      # Chemin vers la clé privée dans le conteneur Docker
+      PRIVATE_KEY_PATH: /app/app/keys/private/private_key.pem
+      
+      # ⚠️ IMPORTANT: URL publique de votre clé publique
+      # Remplacez "votre-domaine.com" par votre vrai domaine
+      # Cette URL doit être accessible publiquement par Tesla
+      PUBLIC_KEY_URL: https://votre-domaine.com/.well-known/appspecific/com.tesla.3p.public-key.pem
+      
+      # ⚠️ IMPORTANT: Domaine de votre application (sans http:// ou https://)
+      # Ce domaine doit être enregistré dans le portail Tesla Developer
+      APP_DOMAIN: votre-domaine.com
+      
+      # Tesla Region (eu or na)
+      TESLA_REGION: eu
+      
+      # Environment
+      ENV: prod
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      # Volume pour stocker les clés privées/publiques
+      - backend_keys:/app/app/keys
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # ⚠️ IMPORTANT: URL de l'API backend en production
+        VITE_API_BASE: https://votre-domaine.com/api
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  # Base de données PostgreSQL
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+  backend_keys:

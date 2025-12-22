@@ -55,3 +55,8 @@ CREATE POLICY "Allow service role full access"
 --   FOR ALL
 --   USING (auth.role() = 'service_role');
 
+-- ============================================================================
+-- NOTE: Pour la gestion multi-comptes Tesla et le cache des véhicules,
+-- exécutez également le fichier migrations/001_add_tesla_accounts_and_vehicles.sql
+-- ============================================================================
+

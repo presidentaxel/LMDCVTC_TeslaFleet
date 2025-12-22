@@ -16,3 +16,6 @@ websockets>=12.0
 prometheus-fastapi-instrumentator
 supabase>=2.0.0
 postgrest>=0.13.0
+cryptography
+python-multipart
+PyJWT>=2.8.0
