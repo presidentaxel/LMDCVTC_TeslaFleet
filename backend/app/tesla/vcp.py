@@ -28,7 +28,12 @@ class CommandStatus(BaseModel):
 @dataclass
 class VehicleCommandProtocol:
     access_token: str
-    region: str = settings.TESLA_REGION.lower()
+    region: str | None = None
+    
+    def __post_init__(self):
+        """Initialise la région par défaut si non fournie."""
+        if self.region is None:
+            self.region = settings.TESLA_REGION.lower()
 
     def _ws_url(self) -> str:
         base = settings.tesla_audience_for(self.region)

@@ -1,0 +1,70 @@
+name: tesla-fleet
+region: nyc
+
+services:
+  - name: backend
+    github:
+      repo: your-username/tesla-fleet
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: ./backend/Dockerfile
+    source_dir: ./backend
+    # ⚠️ IMPORTANT: Port 8000 (pas 8080)
+    http_port: 8000
+    # Health check désactivé temporairement
+    # health_check:
+    #   http_path: /api/health
+    #   initial_delay_seconds: 30
+    #   period_seconds: 10
+    #   timeout_seconds: 5
+    #   success_threshold: 1
+    #   failure_threshold: 3
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      # REDIS_URL retiré car on utilise Supabase
+      # - key: REDIS_URL
+      #   scope: RUN_TIME
+      #   value: ${redis.REDIS_URL}
+      - key: ENV
+        scope: RUN_TIME
+        value: prod
+      # ⚠️ Les autres variables doivent être définies dans App-Level Environment Variables:
+      # - PRIVATE_KEY_PATH=/app/app/keys/private/private_key.pem
+      # - PUBLIC_KEY_URL=https://votre-domaine.com/.well-known/appspecific/com.tesla.3p.public-key.pem
+      # - APP_DOMAIN=votre-domaine.com
+      # - TESLA_CLIENT_ID, TESLA_CLIENT_SECRET
+      # - TP_CLIENT_ID, TP_CLIENT_SECRET, TP_REDIRECT_URI
+      # - FRONTEND_URL, CORS_ORIGINS
+      # - TESLA_REGION
+    routes:
+      - path: /api
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+  - name: frontend
+    github:
+      repo: your-username/tesla-fleet
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: ./frontend/Dockerfile
+    source_dir: ./frontend
+    http_port: 80
+    build_command: docker build --build-arg VITE_API_BASE=${APP_URL}/api -t tesla-fleet-frontend .
+    routes:
+      - path: /
+    envs:
+      - key: VITE_API_BASE
+        scope: BUILD_TIME
+        value: ${APP_URL}/api
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: false
+    cluster_name: tesla-fleet-db
+

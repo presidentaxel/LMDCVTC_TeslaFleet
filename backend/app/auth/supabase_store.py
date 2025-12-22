@@ -155,15 +155,23 @@ class SupabaseTokenStore:
 def get_supabase_store() -> SupabaseTokenStore:
     """
     Factory function pour créer un SupabaseTokenStore depuis les settings.
+    Utilise SUPABASE_SERVICE_ROLE_KEY de préférence (pour opérations admin), sinon SUPABASE_KEY.
     """
-    supabase_url = getattr(settings, "SUPABASE_URL", None)
-    supabase_key = getattr(settings, "SUPABASE_KEY", None)
+    from app.core.settings import settings
     
-    if not supabase_url or not supabase_key:
+    supabase_url = settings.SUPABASE_URL
+    supabase_key = settings.get_supabase_key_for_admin()  # Service role pour opérations admin
+    
+    if not supabase_url:
         raise ValueError(
-            "SUPABASE_URL et SUPABASE_KEY doivent être configurés dans les variables d'environnement"
+            "SUPABASE_URL doit être configuré dans les variables d'environnement"
         )
     
-    table_name = getattr(settings, "SUPABASE_TOKENS_TABLE", "tokens")
+    if not supabase_key:
+        raise ValueError(
+            "Clé Supabase manquante. Configurez SUPABASE_SERVICE_ROLE_KEY (recommandé) ou SUPABASE_KEY pour le stockage des tokens."
+        )
+    
+    table_name = settings.SUPABASE_TOKENS_TABLE
     return SupabaseTokenStore(supabase_url, supabase_key, table_name)
 

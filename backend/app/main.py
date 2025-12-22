@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.settings import settings
 from app.api import api_router
+from app.api.routes_public import get_public_key
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.APP_NAME)
@@ -29,6 +30,10 @@ def create_app() -> FastAPI:
     # Prometheus metrics
     instrumentator = Instrumentator()
     instrumentator.instrument(app).expose(app, endpoint="/metrics")
+    
+    # Route pour la clé publique Tesla - doit être accessible à /.well-known/... (sans /api)
+    # Tesla cherche la clé à cette URL exacte
+    app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem")(get_public_key)
     
     app.include_router(api_router, prefix=settings.API_PREFIX)
     return app

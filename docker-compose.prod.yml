@@ -1,0 +1,37 @@
+# Configuration Docker Compose pour la Production (images pré-construites)
+# - Base de données externalisée (Supabase) : utilisez DATABASE_URL vers Supabase
+# - Redis retiré : utilisez TOKEN_STORE_TYPE=supabase
+# - Les secrets viennent des variables d'environnement (DigitalOcean App) ou d'un fichier .env.prod
+
+services:
+  backend:
+    image: thelouitos/tesla-fleet-backend:latest
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - backend_keys:/app/app/keys
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-https://votre-domaine.com/api}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend_keys:
+
