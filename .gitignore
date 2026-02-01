@@ -45,6 +45,8 @@ cover/
 venv/
 ENV/
 env/
+.env.dev
+.env.prod
 .venv
 *.pyc
 *.pyo
