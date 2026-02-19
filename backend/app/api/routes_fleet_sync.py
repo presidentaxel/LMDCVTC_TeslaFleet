@@ -27,7 +27,7 @@ async def sync_vehicles(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     force_refresh: bool = Query(default=False, description="Forcer la synchronisation avec Tesla"),
-    max_cache_age_minutes: int = Query(default=5, ge=1, le=60, description="Âge maximum du cache en minutes"),
+    max_cache_age_minutes: Optional[int] = Query(default=5, ge=0, le=60, description="Âge max du cache en minutes ; 0 = tous les véhicules du compte"),
     user_info: dict = Depends(require_supabase_user),
     cache: VehicleCacheService = Depends(get_cache_service),
 ):

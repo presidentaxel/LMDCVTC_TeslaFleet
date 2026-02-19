@@ -23,7 +23,7 @@ def get_cache_service() -> VehicleCacheService:
 async def supabase_vehicles(
     account_name: Optional[str] = Query(default=None, description="Nom du compte Tesla"),
     state: Optional[str] = Query(default=None, description="Filtrer par état (online, offline, asleep)"),
-    max_age_minutes: int = Query(default=60, ge=1, le=1440, description="Âge maximum accepté du cache en minutes"),
+    max_age_minutes: Optional[int] = Query(default=60, ge=0, le=1440, description="Âge max du cache en minutes ; 0 = tous les véhicules du compte"),
     user_info: dict = Depends(require_supabase_user),
     cache: VehicleCacheService = Depends(get_cache_service),
 ):

@@ -71,77 +71,90 @@ class VehicleCacheService:
     def cache_vehicles(self, account_id: str, vehicles_data: List[Dict[str, Any]]) -> None:
         """
         Met en cache les données des véhicules.
-        
-        Args:
-            account_id: UUID du compte Tesla
-            vehicles_data: Liste des données des véhicules depuis l'API Tesla
+
+        Les véhicules déjà en base pour ce compte mais absents de cette réponse
+        (ex. véhicule en sommeil) ont leur last_synced_at rafraîchi pour rester
+        visibles dans la liste.
         """
+        now_iso = datetime.utcnow().isoformat()
+        ids_in_response = []
         for vehicle in vehicles_data:
+            vid = vehicle.get("id")
+            if vid is not None:
+                ids_in_response.append(vid)
             vehicle_data = {
-                'tesla_account_id': account_id,
-                'tesla_id': vehicle['id'],
-                'tesla_vehicle_id': vehicle['vehicle_id'],
-                'vin': vehicle['vin'],
-                'vehicle_data': vehicle,
-                'display_name': vehicle.get('display_name'),
-                'access_type': vehicle.get('access_type'),
-                'state': vehicle.get('state'),
-                'in_service': vehicle.get('in_service', False),
-                'api_version': vehicle.get('api_version'),
-                'last_synced_at': datetime.utcnow().isoformat()
+                "tesla_account_id": account_id,
+                "tesla_id": vehicle["id"],
+                "tesla_vehicle_id": vehicle["vehicle_id"],
+                "vin": vehicle["vin"],
+                "vehicle_data": vehicle,
+                "display_name": vehicle.get("display_name"),
+                "access_type": vehicle.get("access_type"),
+                "state": vehicle.get("state"),
+                "in_service": vehicle.get("in_service", False),
+                "api_version": vehicle.get("api_version"),
+                "last_synced_at": now_iso,
             }
-            
-            # Vérifier si le véhicule existe déjà
-            existing = self.supabase.table('vehicles')\
-                .select('id')\
-                .eq('tesla_account_id', account_id)\
-                .eq('tesla_id', vehicle['id'])\
-                .limit(1)\
+            existing = (
+                self.supabase.table("vehicles")
+                .select("id")
+                .eq("tesla_account_id", account_id)
+                .eq("tesla_id", vehicle["id"])
+                .limit(1)
                 .execute()
-            
+            )
             if existing.data and len(existing.data) > 0:
-                # Mettre à jour l'entrée existante
-                self.supabase.table('vehicles')\
-                    .update(vehicle_data)\
-                    .eq('id', existing.data[0]['id'])\
-                    .execute()
+                self.supabase.table("vehicles").update(vehicle_data).eq("id", existing.data[0]["id"]).execute()
             else:
-                # Insérer une nouvelle entrée
-                self.supabase.table('vehicles')\
-                    .insert(vehicle_data)\
-                    .execute()
+                self.supabase.table("vehicles").insert(vehicle_data).execute()
+        # Garder visibles les véhicules du compte non retournés par Tesla (ex. en sommeil)
+        if ids_in_response:
+            # PostgREST .not_.in_() attend une chaîne du type "(val1,val2,...)"
+            ids_tuple = "(" + ",".join(str(x) for x in ids_in_response) + ")"
+            all_other = (
+                self.supabase.table("vehicles")
+                .select("id")
+                .eq("tesla_account_id", account_id)
+                .not_.in_("tesla_id", ids_tuple)
+                .execute()
+            )
+            if all_other.data:
+                for row in all_other.data:
+                    self.supabase.table("vehicles").update({"last_synced_at": now_iso}).eq("id", row["id"]).execute()
     
     def get_cached_vehicles(
-        self, 
-        account_id: str, 
-        max_age_minutes: int = 5,
-        state: Optional[str] = None
+        self,
+        account_id: str,
+        max_age_minutes: Optional[int] = 5,
+        state: Optional[str] = None,
     ) -> Optional[List[Dict[str, Any]]]:
         """
         Récupère les véhicules depuis le cache.
-        
+
         Args:
             account_id: UUID du compte Tesla
-            max_age_minutes: Âge maximum du cache en minutes
+            max_age_minutes: Âge maximum du cache en minutes. None ou 0 = tous les
+                véhicules du compte (pas de filtre d'âge), pour éviter qu'un véhicule
+                absent d'une sync récente (ex. en sommeil) disparaisse de la liste.
             state: Filtrer par état (online, offline, asleep)
-        
+
         Returns:
-            Liste des véhicules ou None si le cache est expiré
+            Liste des véhicules ou None si le cache est expiré (uniquement si
+            max_age_minutes est défini et qu'aucun véhicule n'est assez récent).
         """
-        cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
-        
-        query = self.supabase.table('vehicles')\
-            .select('vehicle_data')\
-            .eq('tesla_account_id', account_id)\
-            .gte('last_synced_at', cutoff_time.isoformat())
-        
+        query = (
+            self.supabase.table("vehicles")
+            .select("vehicle_data")
+            .eq("tesla_account_id", account_id)
+        )
+        if max_age_minutes and max_age_minutes > 0:
+            cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+            query = query.gte("last_synced_at", cutoff_time.isoformat())
         if state:
-            query = query.eq('state', state)
-        
+            query = query.eq("state", state)
         result = query.execute()
-        
         if result.data and len(result.data) > 0:
-            return [item['vehicle_data'] for item in result.data]
+            return [item["vehicle_data"] for item in result.data]
         return None
     
     def cache_endpoint_response(
