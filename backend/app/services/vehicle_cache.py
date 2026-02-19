@@ -109,17 +109,15 @@ class VehicleCacheService:
                 self.supabase.table("vehicles").insert(vehicle_data).execute()
         # Garder visibles les véhicules du compte non retournés par Tesla (ex. en sommeil)
         if ids_in_response:
-            # PostgREST .not_.in_() attend une chaîne du type "(val1,val2,...)"
-            ids_tuple = "(" + ",".join(str(x) for x in ids_in_response) + ")"
-            all_other = (
+            ids_set = set(ids_in_response)
+            all_account = (
                 self.supabase.table("vehicles")
-                .select("id")
+                .select("id, tesla_id")
                 .eq("tesla_account_id", account_id)
-                .not_.in_("tesla_id", ids_tuple)
                 .execute()
             )
-            if all_other.data:
-                for row in all_other.data:
+            for row in (all_account.data or []):
+                if row.get("tesla_id") not in ids_set:
                     self.supabase.table("vehicles").update({"last_synced_at": now_iso}).eq("id", row["id"]).execute()
     
     def get_cached_vehicles(
