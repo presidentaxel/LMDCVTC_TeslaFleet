@@ -78,8 +78,8 @@ class Settings(BaseSettings):
 
     TESLA_CLIENT_ID: str | None = None          # partner (m2m)
     TESLA_CLIENT_SECRET: str | None = None      # partner
-    # Scopes demandés pour le token partenaire (client_credentials). Requis pour éviter 403 "missing scopes" sur les endpoints partenaire (ex. fleet_telemetry_errors).
-    PARTNER_SCOPES: str = "openid vehicle_device_data vehicle_cmds vehicle_charging_cmds"
+    # Scopes demandés pour le token partenaire (client_credentials). Inclure vehicle_specs pour les endpoints Fleet Telemetry (fleet_telemetry_errors, etc.).
+    PARTNER_SCOPES: str = "openid vehicle_device_data vehicle_cmds vehicle_charging_cmds vehicle_specs"
 
     TESLA_VEHICLES_PATH: str = "/api/1/vehicles"
 

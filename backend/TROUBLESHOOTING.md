@@ -73,6 +73,11 @@
    - Vérifiez que les **produits / permissions partenaire** sont activés (ex. Fleet Telemetry, accès aux endpoints Partner).  
    - Sans ces permissions, Tesla peut accepter la requête token mais émettre un token sans les scopes nécessaires, ce qui provoque le 403 sur des endpoints comme `fleet_telemetry_errors`.
 
+4. **Cas : `scopes_in_jwt` est correct mais 403 reste**  
+   Si `token-debug?refresh=1` affiche bien les scopes dans `scopes_in_jwt` (ex. openid vehicle_device_data …) et que `/partner/telemetry-errors` renvoie quand même 403 "missing scopes" :
+   - **Produit Fleet Telemetry** : Dans developer.tesla.com, votre app doit avoir le produit **Fleet Telemetry** (ou équivalent partenaire) activé. Sans cela, l’API refuse l’accès à `fleet_telemetry_errors` même avec un JWT contenant les bons scopes.
+   - **Scope `vehicle_specs`** : Essayer d’ajouter le scope partenaire `vehicle_specs` dans `PARTNER_SCOPES` (ex. `openid vehicle_device_data vehicle_cmds vehicle_charging_cmds vehicle_specs`), redémarrer le backend, puis rappeler `token-debug?refresh=1` et réessayer telemetry-errors.
+
 ---
 
 ### ❌ Erreur 502 lors de l'enregistrement partenaire

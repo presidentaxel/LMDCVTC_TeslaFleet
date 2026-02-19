@@ -14,8 +14,8 @@ D'après votre portail Tesla Developer, votre application utilise :
 ```bash
 TESLA_CLIENT_ID=cacad6ff-48dd-4e8f-b521-8180d0865b94
 TESLA_CLIENT_SECRET=<votre_client_secret>
-# Optionnel : scopes demandés pour les endpoints partenaire (fleet_telemetry_errors, etc.). Défaut ci-dessous.
-PARTNER_SCOPES=openid vehicle_device_data vehicle_cmds vehicle_charging_cmds
+# Scopes partenaire (fleet_telemetry_errors, etc.). Inclure vehicle_specs pour Fleet Telemetry.
+PARTNER_SCOPES=openid vehicle_device_data vehicle_cmds vehicle_charging_cmds vehicle_specs
 ```
 
 **Note importante**: Pour les tokens partenaires, vous devez utiliser le **même CLIENT_ID** que pour les tokens utilisateurs, mais avec `grant_type=client_credentials`. Si vous obtenez 403 "Unauthorized missing scopes" sur `/api/fleet/partner/telemetry-errors`, vérifiez que `PARTNER_SCOPES` est défini et que les permissions partenaire (ex. Fleet Telemetry) sont activées pour votre app dans le portail Tesla Developer.
