@@ -94,9 +94,10 @@ async def partner_telemetry_errors(store: TokenStore = Depends(get_store)):
         # Si 403, donner plus de contexte
         if e.response and e.response.status_code == 403:
             error_detail += (
-                "\n\nErreur 403: Le token partenaire n'a pas les scopes nécessaires. "
-                "Cet endpoint nécessite des permissions partenaire spécifiques dans le portail Tesla Developer. "
-                "Vérifiez que votre application a bien les permissions partenaire activées."
+                "\n\nErreur 403 (missing scopes): Le token partenaire n'a pas les scopes nécessaires. "
+                "À faire: (1) Vérifier que PARTNER_SCOPES est défini (ex: openid vehicle_device_data vehicle_cmds vehicle_charging_cmds) et redémarrer pour obtenir un nouveau token. "
+                "(2) Dans le portail Tesla Developer (developer.tesla.com), activer les produits/permissions partenaire pour votre app (ex. Fleet Telemetry). "
+                "Puis appeler GET /api/fleet/partner/token-debug pour vérifier les scopes du token."
             )
         elif e.response and e.response.status_code == 401:
             error_detail += " - Vérifie que l'application a les permissions partenaire dans le portail Tesla Developer"
@@ -111,37 +112,74 @@ async def partner_telemetry_errors(store: TokenStore = Depends(get_store)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur inattendue: {str(e)}")
 
+def _decode_jwt_scopes(access_token: str) -> str | None:
+    """Decode JWT payload (sans vérification) et retourne le claim scp pour debug."""
+    try:
+        import base64
+        import json
+        parts = access_token.split(".")
+        if len(parts) < 2:
+            return None
+        payload_b64 = parts[1]
+        payload_b64 += "=" * (4 - len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        scp = payload.get("scp")
+        if scp is None:
+            return None
+        if isinstance(scp, list):
+            return " ".join(scp)
+        return str(scp)
+    except Exception:
+        return None
+
+
 # DEBUG: te permet de vérifier ton token partenaire
 @router.get("/partner/token-debug")
-async def partner_token_debug(store: TokenStore = Depends(get_store)):
+async def partner_token_debug(
+    store: TokenStore = Depends(get_store),
+    refresh: bool = Query(False, description="Si true, ignore le cache et demande un nouveau token à Tesla"),
+):
     """
-    Debug: Affiche les infos du token partenaire (scopes, audience, etc.)
+    Debug: Affiche les infos du token partenaire (scopes, audience, etc.).
+    Utilisez ?refresh=1 pour forcer un nouveau token (utile après avoir ajouté PARTNER_SCOPES).
     """
-    from app.auth.partner_tokens import fetch_partner_token
-    
-    # Vérifier d'abord si les credentials sont configurés
-    if not settings.TESLA_CLIENT_ID or not settings.TESLA_CLIENT_SECRET:
+    from app.auth.partner_tokens import fetch_partner_token, PARTNER_CACHE_KEY
+
+    requested_scopes = getattr(settings, "PARTNER_SCOPES", None) or None
+
+    # Vérifier qu'au moins une paire de credentials est configurée
+    has_tesla = bool(settings.TESLA_CLIENT_ID and settings.TESLA_CLIENT_SECRET)
+    has_tp = bool(settings.TP_CLIENT_ID and settings.TP_CLIENT_SECRET)
+    if not has_tesla and not has_tp:
         return {
-            "error": "TESLA_CLIENT_ID ou TESLA_CLIENT_SECRET manquants dans la configuration",
+            "error": "TESLA_CLIENT_ID/SECRET ou TP_CLIENT_ID/SECRET manquants",
             "tesla_client_id_set": bool(settings.TESLA_CLIENT_ID),
             "tesla_client_secret_set": bool(settings.TESLA_CLIENT_SECRET),
             "auth_base": settings.TESLA_AUTH_BASE,
             "audience": settings.tesla_audience_for(),
         }
-    
+
     try:
-        # Essayer d'obtenir un token depuis le cache
-        cached_token = store.get("tesla:partner_token:eu")
+        # Utiliser le cache sauf si ?refresh=1
+        cached_token = None if refresh else store.get(PARTNER_CACHE_KEY)
         if cached_token and store.valid(cached_token):
-            return {
-                "access_token_preview": cached_token.get("access_token", "")[:12] + "...",
+            access_token = cached_token.get("access_token", "")
+            scopes_granted = cached_token.get("scope")
+            scopes_in_jwt = _decode_jwt_scopes(access_token) if access_token else None
+            out = {
+                "access_token_preview": access_token[:12] + "..." if access_token else "",
                 "audience": settings.tesla_audience_for(),
                 "auth_base": settings.TESLA_AUTH_BASE,
-                "scopes": cached_token.get("scope"),
+                "scopes": scopes_granted,
+                "scopes_requested": requested_scopes,
+                "scopes_in_jwt": scopes_in_jwt,
                 "expires_in": cached_token.get("expires_in"),
                 "token_type": cached_token.get("token_type"),
                 "source": "cache",
             }
+            if scopes_granted is None and scopes_in_jwt is None:
+                out["hint"] = "scopes null = token en cache obtenu sans PARTNER_SCOPES, ou Tesla ne renvoie pas ce champ. Utilisez ?refresh=1 pour forcer un nouveau token."
+            return out
         
         # Sinon, essayer de fetch un nouveau token avec TESLA_CLIENT_ID d'abord
         result = {
@@ -154,6 +192,8 @@ async def partner_token_debug(store: TokenStore = Depends(get_store)):
             "expected_client_id": "cacad6ff-48dd-4e8f-b521-8180d0865b94",
         }
         
+        result["scopes_requested"] = requested_scopes
+
         # Essayer avec TESLA_CLIENT_ID d'abord
         if settings.TESLA_CLIENT_ID and settings.TESLA_CLIENT_SECRET:
             try:
@@ -161,6 +201,7 @@ async def partner_token_debug(store: TokenStore = Depends(get_store)):
                 result.update({
                     "access_token_preview": token_obj.access_token[:12] + "...",
                     "scopes": token_obj.scope,
+                    "scopes_in_jwt": _decode_jwt_scopes(token_obj.access_token),
                     "expires_in": token_obj.expires_in,
                     "token_type": token_obj.token_type,
                     "source": "fresh",
@@ -179,6 +220,7 @@ async def partner_token_debug(store: TokenStore = Depends(get_store)):
                 result.update({
                     "access_token_preview": token_obj.access_token[:12] + "...",
                     "scopes": token_obj.scope,
+                    "scopes_in_jwt": _decode_jwt_scopes(token_obj.access_token),
                     "expires_in": token_obj.expires_in,
                     "token_type": token_obj.token_type,
                     "source": "fresh",

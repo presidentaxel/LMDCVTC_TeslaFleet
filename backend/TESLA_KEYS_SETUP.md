@@ -1,17 +1,12 @@
 # Configuration des clés Tesla
 
-## Problème
-
-La clé publique Tesla n'est pas accessible à l'URL requise :
-```
-https://lmdcvtc-teslafleet-huukv.ondigitalocean.app/.well-known/appspecific/com.tesla.3p.public-key.pem
-```
+**Important :** L'API Tesla Fleet exige des **clés EC prime256v1 (secp256r1)**. Les clés RSA ne sont pas acceptées et provoquent l'erreur *"Public key download failed ... error: too large"* lors de l'enregistrement du domaine.
 
 ## Solution
 
-### Option 1: Générer les clés (si vous n'en avez pas)
+### Option 1: Générer les clés (recommandé)
 
-Si vous n'avez pas encore de clés Tesla, générez-les :
+Si vous n'avez pas encore de clés ou si vous aviez des clés RSA, générez une paire EC :
 
 ```bash
 cd backend
@@ -19,8 +14,8 @@ python scripts/generate_tesla_keys.py
 ```
 
 Cela créera :
-- `app/keys/private/private_key.pem` (clé privée - gardez-la secrète!)
-- `app/keys/public/public_key.pem` (clé publique - à héberger)
+- `app/keys/private/private_key.pem` (clé privée EC prime256v1 — gardez-la secrète !)
+- `app/keys/public/public_key.pem` (clé publique — à héberger à l'URL well-known)
 
 ### Option 2: Utiliser une clé privée existante
 
@@ -74,6 +69,7 @@ Vous devriez voir la clé publique au format PEM.
 ## Notes importantes
 
 - ⚠️ **Ne partagez JAMAIS votre clé privée**
+- ✅ Tesla exige des **clés EC prime256v1** (pas RSA). Utilisez `scripts/generate_tesla_keys.py`.
 - ✅ La clé publique peut être publique (c'est son rôle)
 - ✅ Le code génère automatiquement la clé publique depuis la clé privée si nécessaire
 - ✅ Les clés doivent être en format PEM

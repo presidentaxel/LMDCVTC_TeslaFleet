@@ -45,6 +45,36 @@
 
 ---
 
+### ❌ 403 "Unauthorized missing scopes" sur les endpoints partenaire (ex. `/api/fleet/partner/telemetry-errors`)
+
+**Symptôme:**
+```json
+{
+  "detail": "Partner telemetry error: 403 Forbidden: {\"error\":\"Unauthorized missing scopes\",...}"
+}
+```
+
+**Cause:** Le token partenaire (client_credentials) n'a pas les scopes nécessaires pour cet endpoint, ou l'application n'a pas les bons produits activés dans le portail Tesla.
+
+**Solutions:**
+
+1. **Demander les scopes dans le token partenaire**  
+   Le backend envoie maintenant `PARTNER_SCOPES` lors de l'obtention du token. Vérifiez que `PARTNER_SCOPES` est défini (par défaut: `openid vehicle_device_data vehicle_cmds vehicle_charging_cmds`). Redémarrez le backend pour obtenir un nouveau token avec ces scopes (ou attendez l’expiration du cache).
+
+2. **Vérifier les scopes du token**  
+   ```bash
+   curl -X 'GET' 'http://localhost:8000/api/fleet/partner/token-debug'
+   ```  
+   Regardez le champ `scopes` dans la réponse. S’il est vide ou incomplet, Tesla n’accorde pas les scopes demandés (voir point 3).
+
+3. **Activer les permissions dans le portail Tesla Developer**  
+   - Allez sur https://developer.tesla.com  
+   - Ouvrez votre application  
+   - Vérifiez que les **produits / permissions partenaire** sont activés (ex. Fleet Telemetry, accès aux endpoints Partner).  
+   - Sans ces permissions, Tesla peut accepter la requête token mais émettre un token sans les scopes nécessaires, ce qui provoque le 403 sur des endpoints comme `fleet_telemetry_errors`.
+
+---
+
 ### ❌ Erreur 502 lors de l'enregistrement partenaire
 
 **Symptôme:**

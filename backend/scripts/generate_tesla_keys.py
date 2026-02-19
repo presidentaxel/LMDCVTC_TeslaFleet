@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Script pour générer une paire de clés RSA pour Tesla Fleet API.
+Script pour générer une paire de clés EC (prime256v1) pour Tesla Fleet API.
+Tesla exige des clés EC prime256v1 (secp256r1) — les clés RSA ne sont pas acceptées.
 Utilisez ce script si vous n'avez pas encore de clés.
 """
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.backends import default_backend
 from pathlib import Path
 import os
 
 def generate_tesla_keys():
-    """Génère une paire de clés RSA pour Tesla."""
+    """Génère une paire de clés EC prime256v1 pour Tesla (exigé par l'API Fleet)."""
     # Créer les répertoires si nécessaire
     private_dir = Path("./app/keys/private")
     public_dir = Path("./app/keys/public")
@@ -18,10 +19,9 @@ def generate_tesla_keys():
     private_dir.mkdir(parents=True, exist_ok=True)
     public_dir.mkdir(parents=True, exist_ok=True)
     
-    # Générer la clé privée
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
+    # Générer la clé privée EC prime256v1 (secp256r1) - requis par Tesla
+    private_key = ec.generate_private_key(
+        curve=ec.SECP256R1(),
         backend=default_backend()
     )
     
@@ -36,7 +36,7 @@ def generate_tesla_keys():
     with open(private_key_path, "wb") as f:
         f.write(private_pem)
     
-    print(f"✓ Clé privée générée: {private_key_path}")
+    print(f"[OK] Cle privee generee: {private_key_path}")
     print(f"  Permissions: {oct(private_key_path.stat().st_mode)[-3:]}")
     
     # Générer la clé publique
@@ -50,17 +50,17 @@ def generate_tesla_keys():
     with open(public_key_path, "wb") as f:
         f.write(public_pem)
     
-    print(f"✓ Clé publique générée: {public_key_path}")
+    print(f"[OK] Cle publique generee: {public_key_path}")
     print(f"  Permissions: {oct(public_key_path.stat().st_mode)[-3:]}")
     
     # Afficher la clé publique pour copier-coller si nécessaire
     print("\n" + "="*70)
-    print("CLÉ PUBLIQUE (à héberger sur votre serveur):")
+    print("CLE PUBLIQUE (a heberger sur votre serveur):")
     print("="*70)
     print(public_pem.decode())
     print("="*70)
     
-    print("\n✓ Clés générées avec succès!")
+    print("\n[OK] Cles generees avec succes!")
     print(f"\nConfigurez dans votre .env:")
     print(f"  PRIVATE_KEY_PATH={private_key_path.absolute()}")
     print(f"  PUBLIC_KEY_URL=https://votre-domaine.com/.well-known/appspecific/com.tesla.3p.public-key.pem")
@@ -69,13 +69,13 @@ def generate_tesla_keys():
     if os.name != 'nt':
         os.chmod(private_key_path, 0o600)
         os.chmod(public_key_path, 0o644)
-        print("\n✓ Permissions sécurisées (600 pour privée, 644 pour publique)")
+        print("\n[OK] Permissions securisees (600 privee, 644 publique)")
 
 if __name__ == "__main__":
     try:
         generate_tesla_keys()
     except Exception as e:
-        print(f"❌ Erreur lors de la génération des clés: {e}")
+        print(f"Erreur lors de la generation des cles: {e}")
         import traceback
         traceback.print_exc()
         exit(1)

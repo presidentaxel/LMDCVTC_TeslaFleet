@@ -44,10 +44,9 @@ async def fetch_partner_token(use_tp_credentials: bool = False) -> PartnerToken:
         "client_secret": client_secret,
         "audience": settings.tesla_audience_for(),  # audience par défaut selon la région
     }
-    # Note: Pour client_credentials, les scopes sont généralement déterminés par
-    # la configuration de l'app dans le portail, mais on peut essayer de les spécifier
-    # si nécessaire (décommenter si besoin):
-    # data["scope"] = "fleet:partner:read fleet:partner:write"
+    # Scopes requis pour les endpoints partenaire (fleet_telemetry_errors, etc.). Sans scope, Tesla peut renvoyer 403 "Unauthorized missing scopes".
+    if getattr(settings, "PARTNER_SCOPES", None):
+        data["scope"] = settings.PARTNER_SCOPES.strip()
 
     # Utiliser AUTH_TOKEN_BASE pour /token (fleet-auth.prd.vn.cloud.tesla.com)
     token_base = getattr(settings, "AUTH_TOKEN_BASE", None) or settings.TESLA_AUTH_BASE
