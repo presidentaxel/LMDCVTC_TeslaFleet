@@ -94,10 +94,10 @@ async def partner_telemetry_errors(store: TokenStore = Depends(get_store)):
         # Si 403, donner plus de contexte
         if e.response and e.response.status_code == 403:
             error_detail += (
-                "\n\nErreur 403 (missing scopes): Le token partenaire n'a pas les scopes nécessaires. "
-                "À faire: (1) Vérifier que PARTNER_SCOPES est défini (ex: openid vehicle_device_data vehicle_cmds vehicle_charging_cmds) et redémarrer pour obtenir un nouveau token. "
-                "(2) Dans le portail Tesla Developer (developer.tesla.com), activer les produits/permissions partenaire pour votre app (ex. Fleet Telemetry). "
-                "Puis appeler GET /api/fleet/partner/token-debug pour vérifier les scopes du token."
+                "\n\nErreur 403 (missing scopes): Si token-debug affiche déjà tous les scopes dans scopes_in_jwt, "
+                "la cause est presque toujours que le produit Fleet Telemetry n'est pas activé pour votre app. "
+                "Dans developer.tesla.com → votre application → produits/permissions, activez « Fleet Telemetry » (ou équivalent partenaire). "
+                "Sans ce produit, Tesla refuse l'accès à fleet_telemetry_errors même avec un token contenant tous les scopes."
             )
         elif e.response and e.response.status_code == 401:
             error_detail += " - Vérifie que l'application a les permissions partenaire dans le portail Tesla Developer"
