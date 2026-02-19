@@ -78,16 +78,16 @@ class Settings(BaseSettings):
 
     TESLA_CLIENT_ID: str | None = None          # partner (m2m)
     TESLA_CLIENT_SECRET: str | None = None      # partner
-    # Scopes demandés pour le token partenaire (client_credentials). Inclure vehicle_specs pour les endpoints Fleet Telemetry (fleet_telemetry_errors, etc.).
-    PARTNER_SCOPES: str = "openid vehicle_device_data vehicle_cmds vehicle_charging_cmds vehicle_specs"
+    # Scopes demandés pour le token partenaire (client_credentials). Tous les scopes Tesla (vehicle_specs = Partner only).
+    PARTNER_SCOPES: str = "openid offline_access user_data vehicle_device_data vehicle_location vehicle_cmds vehicle_charging_cmds vehicle_specs energy_device_data energy_cmds enterprise_management"
 
     TESLA_VEHICLES_PATH: str = "/api/1/vehicles"
 
-    # Third-party (authorization_code)
+    # Third-party (authorization_code) : scopes demandés à l'utilisateur lors du login Tesla (vehicle_specs = Partner only, pas dans OAuth).
     TP_CLIENT_ID: str | None = None
     TP_CLIENT_SECRET: str | None = None
     TP_REDIRECT_URI: str | None = None
-    TP_SCOPES: str = "openid offline_access vehicle_device_data vehicle_cmds vehicle_charging_cmds"
+    TP_SCOPES: str = "openid offline_access user_data vehicle_device_data vehicle_location vehicle_cmds vehicle_charging_cmds energy_device_data energy_cmds enterprise_management"
 
     DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/postgres"
     REDIS_URL: str = "memory://dev"
