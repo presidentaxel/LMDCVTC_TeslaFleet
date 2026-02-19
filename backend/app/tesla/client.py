@@ -113,6 +113,11 @@ class TeslaClient:
                 raise VCPError("vehicle_id introuvable dans la réponse Tesla")
             return str(internal_id)
         except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                raise VCPError(
+                    f"Véhicule {vehicle_id} introuvable (404). Utilisez l'identifiant 'id' du véhicule "
+                    "(celui de la liste GET /api/1/vehicles), pas le 'vehicle_id'. Détail: {exc}"
+                ) from exc
             raise VCPError(f"Impossible de récupérer les informations du véhicule {vehicle_id}: {exc}") from exc
 
     async def _run_vcp(

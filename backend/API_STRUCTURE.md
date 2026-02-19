@@ -173,6 +173,31 @@ POST /api/fleet/direct/vehicles/{vehicle_id}/lock
 
 ---
 
+## Dépannage – commandes véhicule (wake, lock, unlock, charge)
+
+### Identifiant à utiliser : `id` et non `vehicle_id`
+
+L’API Tesla expose deux identifiants par véhicule dans la liste (`GET /api/1/vehicles`) :
+
+| Champ         | Exemple            | Usage |
+|---------------|--------------------|--------|
+| **`id`**      | `1493110020084182` | À utiliser dans les URLs : `/api/fleet/direct/vehicles/{id}/wake`, `GET /api/1/vehicles/{id}`. |
+| **`vehicle_id`** | `192956844484`  | Utilisé en interne (ex. VCP). Ne pas l’utiliser dans le path des endpoints direct. |
+
+- **404 "not_found"** : vous avez sans doute passé le **vehicle_id** au lieu de l’**id**. Utilisez l’**id** (le grand nombre) issu de la liste des véhicules.
+- Récupérer les véhicules avec leur `id` : `GET /api/fleet/sync/vehicles` ou `GET /api/1/vehicles` (Tesla).
+
+### Erreur WebSocket 403 sur wake / commandes
+
+Si la requête GET véhicule réussit mais que la connexion WebSocket VCP renvoie **HTTP 403** :
+
+1. **Clé virtuelle (virtual key)** – D’après la [doc Tesla Vehicle Commands](https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands), les commandes nécessitent qu’une clé virtuelle de l’application soit installée sur le véhicule. Vérifiez que l’app Fleet API est correctement enregistrée et que le véhicule a bien accès à cette clé (ou que l’utilisateur l’a autorisée).
+2. **Scopes OAuth** – Le token utilisateur doit contenir au minimum `vehicle_cmds` (et éventuellement `vehicle_charging_cmds` selon la commande). Vérifiez les scopes demandés à l’autorisation et dans le token.
+3. **Région** – La base URL (EU vs NA) doit correspondre à la région du véhicule ; le backend utilise `TESLA_REGION` / l’audience associée.
+4. **Restrictions Tesla** – Certains refus 403 peuvent venir des serveurs Tesla (IP, app non approuvée, etc.). En cas de blocage persistant, contacter le support développeur Tesla.
+
+---
+
 ## Avantages de cette organisation
 
 1. **Clarté** : Chaque type d'endpoint a son propre préfixe et fichier
