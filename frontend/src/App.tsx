@@ -1,38 +1,24 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import TelemetryView from "./features/telemetry/TelemetryView";
-import AuthPage from "./components/AuthPage";
-import { apiHealth, type HealthResponse } from "./lib/api";
-import "./App.css";
-
-function Home() {
-  const [health, setHealth] = useState<string>("checking...");
-
-  useEffect(() => {
-    apiHealth()
-      .then((d: HealthResponse) => setHealth(d.status))
-      .catch((e: unknown) => setHealth(`error: ${e instanceof Error ? e.message : String(e)}`));
-  }, []);
-
-  return (
-    <div style={{ fontFamily: "sans-serif", padding: 16 }}>
-      <nav style={{ marginBottom: 20, padding: 16, background: "#f5f5f5", borderRadius: 8 }}>
-        <Link to="/" style={{ marginRight: 16 }}>Accueil</Link>
-        <Link to="/auth">Connexion Tesla</Link>
-      </nav>
-      <h1>Tesla Fleet Frontend</h1>
-      <p>API health: {health}</p>
-      <TelemetryView />
-    </div>
-  );
-}
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AppShell from "./layout/AppShell";
+import SetupPage from "./features/setup/SetupPage";
+import FleetPage from "./features/fleet/FleetPage";
+import VehiclesPage from "./features/vehicles/VehiclesPage";
+import CommandsPage from "./features/commands/CommandsPage";
+import DeveloperPage from "./features/developer/DeveloperPage";
+import "./layout/AppShell.css";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/auth" element={<AuthPage />} />
+        <Route element={<AppShell />}>
+          <Route index element={<Navigate to="/setup" replace />} />
+          <Route path="setup" element={<SetupPage />} />
+          <Route path="fleet" element={<FleetPage />} />
+          <Route path="vehicles" element={<VehiclesPage />} />
+          <Route path="commands" element={<CommandsPage />} />
+          <Route path="developer" element={<DeveloperPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
