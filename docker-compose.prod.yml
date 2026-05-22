@@ -12,6 +12,10 @@
 
 services:
   backend:
+    # Build depuis le repo (git pull) : l'image Hub peut être en retard vs routes /api/business/*
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: thelouitos/tesla-fleet-backend:latest
     env_file:
       - ./backend/.env.prod

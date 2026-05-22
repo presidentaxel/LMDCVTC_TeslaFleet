@@ -3,6 +3,9 @@
 
 services:
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: thelouitos/tesla-fleet-backend:latest
     env_file:
       - ./backend/.env.prod

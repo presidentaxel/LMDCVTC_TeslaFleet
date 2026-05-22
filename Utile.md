@@ -152,6 +152,8 @@ npm run dev
 - UI : http://localhost:5173 → **Configuration** → coller le code business  
 - API docs : http://localhost:8000/docs  
 
+**Logs en dev local** : affichés directement dans les terminaux uvicorn (backend) et `npm run dev` (frontend).
+
 ### 1.3 Générer les clés Tesla (EC)
 
 **Bash**
@@ -409,7 +411,6 @@ curl -s http://localhost:8000/api/health
 curl -s http://localhost:8000/api/business/status
 curl -sI http://localhost:8080/ | head -5
 curl -s http://localhost:8000/.well-known/appspecific/com.tesla.3p.public-key.pem | head -3
-docker compose -f docker-compose.prod.yml logs -f --tail=50
 ```
 
 **PowerShell (PC)**
@@ -419,6 +420,79 @@ curl.exe https://teslapi.axelproject.fr/api/health
 curl.exe https://teslapi.axelproject.fr/api/business/status
 nslookup teslapi.axelproject.fr 8.8.8.8
 ```
+
+### 3.6 Logs Docker (backend + frontend)
+
+Sur le VPS, depuis `~/LMDCVTC_TeslaFleet`. Fichier compose : `docker-compose.prod.yml` (services `backend` et `frontend`).
+
+**Dernières lignes (sans suivre en direct)**
+
+```bash
+cd ~/LMDCVTC_TeslaFleet
+
+# Backend (API FastAPI / uvicorn)
+docker compose -f docker-compose.prod.yml logs --tail=100 backend
+
+# Frontend (nginx dans le conteneur)
+docker compose -f docker-compose.prod.yml logs --tail=100 frontend
+
+# Les deux en même temps
+docker compose -f docker-compose.prod.yml logs --tail=100 backend frontend
+```
+
+**Suivre les logs en direct** (`Ctrl+C` pour quitter) :
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.prod.yml logs -f frontend
+docker compose -f docker-compose.prod.yml logs -f backend frontend
+```
+
+**Logs depuis un moment** (ex. 10 dernières minutes) :
+
+```bash
+docker compose -f docker-compose.prod.yml logs --since=10m backend
+docker compose -f docker-compose.prod.yml logs --since=10m frontend
+```
+
+**Backend seul** (sans conteneur frontend) :
+
+```bash
+docker compose -f docker-compose.backend.yml logs -f --tail=100 backend
+```
+
+**Logs nginx à l’intérieur du frontend** (si la page ne charge pas) :
+
+```bash
+docker compose -f docker-compose.prod.yml exec frontend cat /var/log/nginx/error.log
+```
+
+**Caddy** (HTTPS, routage — pas Docker) :
+
+```bash
+sudo journalctl -u caddy -f
+sudo journalctl -u caddy --since "1 hour ago" --no-pager
+```
+
+### 3.7 Dépannage : `/api/business/*` en 404
+
+**Symptôme** : la console affiche 404 sur `api/business/status`, `consent-guide`, `vehicles`, alors que `/api/health` répond 200.
+
+**Cause** : le **frontend** est rebuild depuis le code (`git pull`), mais le **backend** tournait encore avec l’ancienne image Docker Hub `thelouitos/tesla-fleet-backend:latest`, publiée **avant** les routes business.
+
+**Correction** (sur le VPS, après `git pull` avec `docker-compose.prod.yml` qui inclut `build: ./backend`) :
+
+```bash
+cd ~/LMDCVTC_TeslaFleet
+docker compose -f docker-compose.prod.yml up -d --build backend
+curl -s http://localhost:8000/api/business/status
+curl -s http://localhost:8000/api/business/consent-guide | head -c 200
+```
+
+Réponse attendue pour `status` : JSON (pas HTML, pas 404).  
+Lister les routes : `curl -s http://localhost:8000/openapi.json | grep business`
+
+**Alternative** : repousser l’image Hub depuis ton PC (`docs/BUILD_AND_PUSH.md`) puis `docker compose pull backend` sur le VPS.
 
 ---
 
@@ -430,6 +504,9 @@ nslookup teslapi.axelproject.fr 8.8.8.8
 | API health local | `curl -s localhost:8000/api/health` | `Invoke-RestMethod http://localhost:8000/api/health` |
 | API health prod | `curl -s https://teslapi.axelproject.fr/api/health` | `curl.exe https://teslapi.axelproject.fr/api/health` |
 | Rebuild Docker VPS | `docker compose -f docker-compose.prod.yml up -d --build` | — (après SSH) |
+| Logs backend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 backend` | — (après SSH) |
+| Logs frontend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 frontend` | — (après SSH) |
+| Logs Caddy | `sudo journalctl -u caddy -f` | — |
 | Reload Caddy | `sudo systemctl reload caddy` | — |
 | UI locale | ouvrir http://localhost:5173 | idem |
 | Swagger | http://localhost:8000/docs | idem |

@@ -160,6 +160,7 @@ sudo systemctl reload caddy
 | `{"detail":"Not Found"}` sur `/` | Caddy envoie tout vers `:8000` | Mettre à jour le Caddyfile (frontend → `:8080`) |
 | `failed to bind ... :80` | Conflit Caddy / ancien compose | Utiliser `8080:80` dans `docker-compose.prod.yml` |
 | UI charge mais API en erreur | Mauvais `VITE_API_BASE` au build | Corriger `.env`, puis `docker compose ... up -d --build` |
+| `/api/health` OK, `/api/business/*` 404 | Image backend Hub obsolète | `docker compose -f docker-compose.prod.yml up -d --build backend` |
 | Frontend absent dans `docker ps` | Échec au démarrage (port, build) | `docker compose -f docker-compose.prod.yml logs frontend` |
 
 Vérifier ce qui occupe le port 80 :
