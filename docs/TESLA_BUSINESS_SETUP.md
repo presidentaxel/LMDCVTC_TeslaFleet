@@ -60,11 +60,15 @@ cd backend && pytest app/tests/test_business_tokens.py app/tests/test_health.py 
 
 ## Production OVH
 
-1. `.env.prod` avec `APP_DOMAIN=teslapi.axelproject.fr`, HTTPS, secret Tesla.
-2. Clé EC : `python scripts/generate_tesla_keys.py`
-3. Déployer backend + frontend.
-4. UI **Configuration → Infra** : enregistrer le domaine Tesla.
-5. Consentement business + véhicules dans la flotte.
+1. `backend/.env.prod` : `APP_DOMAIN=teslapi.axelproject.fr`, HTTPS, secret Tesla.
+2. Racine : `cp env.prod.example .env` puis `VITE_API_BASE=https://teslapi.axelproject.fr/api`.
+3. Clé EC : `python scripts/generate_tesla_keys.py`
+4. `docker compose -f docker-compose.prod.yml up -d --build` (frontend **8080**).
+5. Caddy : `deploy/Caddyfile.example` → `/etc/caddy/Caddyfile`, puis `sudo systemctl reload caddy`.
+6. UI **Configuration → Infra** : enregistrer le domaine Tesla.
+7. Consentement business + véhicules dans la flotte.
+
+Guide pas à pas : [OVH_SSH_COMMANDS.md](./OVH_SSH_COMMANDS.md).
 
 ## Commandes à distance
 

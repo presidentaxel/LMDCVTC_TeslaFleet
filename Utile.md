@@ -39,16 +39,17 @@ Cocher au fur et à mesure.
 ### Infra prod (OVH)
 
 - [ ] DNS `teslapi.axelproject.fr` → `51.254.128.11` (A record)
-- [ ] **Caddy** (ou nginx) reverse proxy vers `localhost:8000` + HTTPS
-- [ ] `APP_DOMAIN=teslapi.axelproject.fr` et `PUBLIC_KEY_URL=https://teslapi.axelproject.fr/.well-known/...` dans `.env.prod`
+- [ ] **Caddy** : `/api` et `/.well-known` → `localhost:8000`, reste → `localhost:8080` (voir `deploy/Caddyfile.example`)
+- [ ] Racine `.env` : `VITE_API_BASE=https://teslapi.axelproject.fr/api` (copie `env.prod.example`)
+- [ ] `docker compose -f docker-compose.prod.yml up -d --build` (frontend sur **8080**, pas 80)
+- [ ] `APP_DOMAIN=teslapi.axelproject.fr` et `PUBLIC_KEY_URL=https://teslapi.axelproject.fr/.well-known/...` dans `backend/.env.prod`
 - [ ] **Enregistrement domaine Tesla** : `POST /api/fleet/partner/register` (UI Configuration → Infra ou curl)
 - [ ] **Clé virtuelle** sur chaque véhicule (pour lock, musique, etc.) — doc Tesla Virtual Keys
 
 ### Optionnel
 
 - [ ] Supabase configuré (`TOKEN_STORE_TYPE=supabase`) si multi-utilisateurs / persistance tokens
-- [ ] `docker-compose.backend.yml` sur le VPS (si absent : utiliser `docker compose -f docker-compose.prod.yml` ou build local, voir ci-dessous)
-- [ ] Frontend déployé (Docker ou fichiers statiques derrière Caddy)
+- [ ] Backend seul : `docker compose -f docker-compose.backend.yml` (sans UI Docker)
 - [ ] Refactor gros fichiers backend (`routes_auth`, `oauth_third_party`) — dette technique
 
 ---
@@ -379,29 +380,25 @@ ssh ubuntu@51.254.128.11
 cd ~/LMDCVTC_TeslaFleet
 git pull origin main
 
-# Si docker-compose.backend.yml existe sur le VPS :
-docker compose -f docker-compose.backend.yml up -d --build
+cp -n env.prod.example .env
+# nano .env  → VITE_API_BASE=https://teslapi.axelproject.fr/api
 
-# Sinon (fichier présent dans le repo) :
-# docker compose -f docker-compose.prod.yml up -d --build
-
-# Forcer recréation si besoin :
-# docker compose -f docker-compose.backend.yml up -d --force-recreate
+docker compose -f docker-compose.prod.yml up -d --build
+docker ps
 ```
 
-### 3.4 Caddy (HTTPS)
+### 3.4 Caddy (HTTPS + routage UI / API)
 
 **Bash (VPS)**
 
 ```bash
-sudo systemctl status caddy
-sudo nano /etc/caddy/Caddyfile
-# Exemple :
-# teslapi.axelproject.fr {
-#     reverse_proxy localhost:8000
-# }
+sudo cp ~/LMDCVTC_TeslaFleet/deploy/Caddyfile.example /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
+sudo systemctl status caddy
 ```
+
+Détail : `docs/OVH_SSH_COMMANDS.md` et `deploy/Caddyfile.example`.
 
 ### 3.5 Vérifications prod
 
@@ -410,8 +407,9 @@ sudo systemctl reload caddy
 ```bash
 curl -s http://localhost:8000/api/health
 curl -s http://localhost:8000/api/business/status
+curl -sI http://localhost:8080/ | head -5
 curl -s http://localhost:8000/.well-known/appspecific/com.tesla.3p.public-key.pem | head -3
-docker compose -f docker-compose.backend.yml logs -f --tail=50
+docker compose -f docker-compose.prod.yml logs -f --tail=50
 ```
 
 **PowerShell (PC)**
@@ -431,7 +429,7 @@ nslookup teslapi.axelproject.fr 8.8.8.8
 | SSH VPS | `ssh ubuntu@51.254.128.11` | `ssh ubuntu@51.254.128.11` |
 | API health local | `curl -s localhost:8000/api/health` | `Invoke-RestMethod http://localhost:8000/api/health` |
 | API health prod | `curl -s https://teslapi.axelproject.fr/api/health` | `curl.exe https://teslapi.axelproject.fr/api/health` |
-| Rebuild Docker VPS | `docker compose -f docker-compose.backend.yml up -d --build` | — (après SSH) |
+| Rebuild Docker VPS | `docker compose -f docker-compose.prod.yml up -d --build` | — (après SSH) |
 | Reload Caddy | `sudo systemctl reload caddy` | — |
 | UI locale | ouvrir http://localhost:5173 | idem |
 | Swagger | http://localhost:8000/docs | idem |

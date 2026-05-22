@@ -1,0 +1,28 @@
+# Caddy sur le VPS (ports 80/443). Le frontend Docker écoute sur localhost:8080.
+# Le backend Docker écoute sur localhost:8000.
+#
+# Installation :
+#   sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile
+#   sudo caddy validate --config /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+#
+# Remplacer teslapi.axelproject.fr par votre domaine.
+
+teslapi.axelproject.fr {
+	handle /api/* {
+		reverse_proxy localhost:8000
+	}
+
+	handle /.well-known/* {
+		reverse_proxy localhost:8000
+	}
+
+	handle {
+		reverse_proxy localhost:8080
+	}
+}
+
+# --- Variante backend seul (pas de conteneur frontend) ---
+# teslapi.axelproject.fr {
+# 	reverse_proxy localhost:8000
+# }

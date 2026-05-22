@@ -210,3 +210,15 @@ Assurez-vous que `APP_DOMAIN` est défini avant d'appeler `/api/fleet/partner/re
 2. Vérifiez que l'endpoint est accessible publiquement (pas de firewall)
 3. Vérifiez que vous utilisez HTTPS en production
 
+## OVH : Caddy + Docker (frontend visible)
+
+Sur le VPS, **Caddy** utilise les ports 80/443. Le frontend Docker doit écouter sur **8080**, pas 80.
+
+1. `cp env.prod.example .env` — définir `VITE_API_BASE=https://votre-domaine.com/api`
+2. `docker compose -f docker-compose.prod.yml up -d --build`
+3. Copier `deploy/Caddyfile.example` vers `/etc/caddy/Caddyfile` et recharger Caddy
+
+Si `https://votre-domaine.com/` affiche `{"detail":"Not Found"}`, Caddy envoie encore tout vers le backend : mettre à jour le Caddyfile (routes `/api` → `:8000`, reste → `:8080`).
+
+Guide détaillé : [OVH_SSH_COMMANDS.md](./OVH_SSH_COMMANDS.md).
+

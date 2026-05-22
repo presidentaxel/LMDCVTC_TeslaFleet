@@ -1,7 +1,14 @@
-# Configuration Docker Compose pour la Production (images pré-construites)
-# - Base de données externalisée (Supabase) : utilisez DATABASE_URL vers Supabase
-# - Redis retiré : utilisez TOKEN_STORE_TYPE=supabase
-# - Les secrets viennent des variables d'environnement (DigitalOcean App) ou d'un fichier .env.prod
+# Production : backend (8000) + frontend nginx (8080 sur l'hôte).
+# Caddy occupe les ports 80/443 — voir deploy/Caddyfile.example
+#
+# Avant le build frontend :
+#   cp env.prod.example .env
+#   # éditer VITE_API_BASE=https://votre-domaine.com/api
+#
+# Sur le VPS :
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile  # adapter le domaine
+#   sudo systemctl reload caddy
 
 services:
   backend:
@@ -26,12 +33,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: ${VITE_API_BASE:-https://votre-domaine.com/api}
+        VITE_API_BASE: ${VITE_API_BASE:-https://teslapi.axelproject.fr/api}
     ports:
-      - "80:80"
+      # 8080 : Caddy garde 80/443 sur l'hôte
+      - "8080:80"
     depends_on:
       - backend
 
 volumes:
   backend_keys:
-

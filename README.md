@@ -73,9 +73,10 @@ docker run -d --name tesla-fleet-frontend -p 80:80 tesla-fleet-frontend
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-### Production (exemple)
-- Frontend: https://app.votre-domaine.com
-- Backend API: https://api.votre-domaine.com
+### Production (exemple, même domaine + Caddy)
+- UI : `https://teslapi.axelproject.fr/`
+- API : `https://teslapi.axelproject.fr/api`
+- Déploiement OVH : [docs/OVH_SSH_COMMANDS.md](docs/OVH_SSH_COMMANDS.md)
 
 ## 🛠️ Technologies
 

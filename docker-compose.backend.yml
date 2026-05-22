@@ -1,0 +1,23 @@
+# Backend seul (port 8000). Utile si le frontend n'est pas déployé via Docker.
+# Avec Caddy : reverse_proxy API uniquement — voir deploy/Caddyfile.example (version API-only).
+
+services:
+  backend:
+    image: thelouitos/tesla-fleet-backend:latest
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - backend_keys:/app/app/keys
+
+volumes:
+  backend_keys:

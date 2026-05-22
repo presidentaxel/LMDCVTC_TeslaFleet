@@ -65,7 +65,8 @@ services:
         # ⚠️ IMPORTANT: URL de l'API backend en production
         VITE_API_BASE: https://votre-domaine.com/api
     ports:
-      - "80:80"
+      # Sur VPS avec Caddy : 8080 (Caddy garde 80/443). Voir deploy/Caddyfile.example
+      - "8080:80"
     depends_on:
       - backend
 

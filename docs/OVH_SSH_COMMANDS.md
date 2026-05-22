@@ -1,83 +1,90 @@
 # Commandes SSH et déploiement OVH
 
-Récapitulatif des commandes pour le VPS OVH (backend Tesla Fleet).
+Récapitulatif pour le VPS OVH : **Caddy** (HTTPS, ports 80/443) + **Docker** (backend `:8000`, frontend `:8080`).
 
 ---
 
-## Déploiement complet : push vers le VPS (étapes dans l’ordre)
+## Architecture prod
 
-À faire **sur ton PC (PowerShell)** puis **sur le VPS (SSH)**.
+| Service | Port hôte | Rôle |
+|---------|-----------|------|
+| Caddy | 80, 443 | HTTPS, routage vers backend / frontend |
+| Backend (Docker) | 8000 | API FastAPI, clé publique Tesla |
+| Frontend (Docker) | 8080 | UI React (nginx) |
 
-### 1. Sur le PC — Git (pousser le code)
+Caddy ne doit **pas** tout envoyer vers le backend : la racine `/` doit aller vers le frontend, sinon vous verrez `{"detail":"Not Found"}` (réponse FastAPI).
+
+Fichier de référence : [`deploy/Caddyfile.example`](../deploy/Caddyfile.example).
+
+---
+
+## Déploiement complet (étapes dans l’ordre)
+
+### 1. Sur le PC — Git
 
 ```powershell
 cd D:\Code\tesla-fleet
-
-git status
 git add .
-git commit -m "ton message"
+git commit -m "votre message"
 git push origin main
 ```
 
-### 2. Sur le PC — Envoyer les fichiers sensibles (si modifiés)
-
-À faire seulement si tu as changé `.env.prod` ou la clé privée Tesla :
+### 2. Sur le PC — Fichiers sensibles (si modifiés)
 
 ```powershell
-# Fichier d'environnement prod
 scp D:\Code\tesla-fleet\backend\.env.prod ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/.env.prod
-
-# Clé privée Tesla (EC prime256v1) — si tu l'as régénérée
 scp D:\Code\tesla-fleet\backend\app\keys\private\private_key.pem ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem
 ```
 
-Si sur le VPS la clé est dans `backend/app/keys/private/`, utilise plutôt :
-
-```powershell
-scp D:\Code\tesla-fleet\backend\app\keys\private\private_key.pem ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/app/keys/private/private_key.pem
-```
-
-### 3. Sur le VPS — Récupérer le code et redémarrer
-
-Connexion SSH :
+### 3. Sur le VPS — Pull, variables, Docker
 
 ```bash
 ssh ubuntu@51.254.128.11
-```
-
-Puis sur le VPS :
-
-```bash
 cd ~/LMDCVTC_TeslaFleet
-
-# Récupérer les derniers changements
 git pull origin main
 
-# Reconstruire et redémarrer le backend
-docker compose -f docker-compose.backend.yml up -d --build
+# Variables de build frontend (une fois, ou après changement de domaine)
+cp -n env.prod.example .env
+# nano .env   → VITE_API_BASE=https://teslapi.axelproject.fr/api
 
-# (Optionnel) Forcer recréation des conteneurs
-# docker compose -f docker-compose.backend.yml up -d --force-recreate
+docker compose -f docker-compose.prod.yml up -d --build
+docker ps
 ```
 
-### 4. Vérifications
+Le conteneur `frontend` doit être **Up** et mapper `0.0.0.0:8080->80/tcp`.  
+Si vous voyez `address already in use` sur le port **80**, c’est normal avec l’ancienne config : le repo utilise maintenant **8080**.
 
-Sur le VPS :
+### 4. Sur le VPS — Caddy
 
 ```bash
-# Santé de l’API
-curl http://localhost:8000/api/health
+sudo cp ~/LMDCVTC_TeslaFleet/deploy/Caddyfile.example /etc/caddy/Caddyfile
+# Adapter le nom de domaine si besoin :
+# sudo nano /etc/caddy/Caddyfile
 
-# Clé publique Tesla (doit afficher un bloc PEM court, EC)
-curl http://localhost:8000/.well-known/appspecific/com.tesla.3p.public-key.pem
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+sudo systemctl status caddy
 ```
 
-Depuis ton PC :
+### 5. Vérifications
+
+**Sur le VPS :**
+
+```bash
+curl -s http://localhost:8000/api/health
+curl -sI http://localhost:8080/ | head -5
+curl -s http://localhost:8080/ | head -c 200
+```
+
+**Depuis le PC :**
 
 ```powershell
 curl.exe https://teslapi.axelproject.fr/api/health
-curl.exe https://teslapi.axelproject.fr/.well-known/appspecific/com.tesla.3p.public-key.pem
+curl.exe -I https://teslapi.axelproject.fr/
 ```
+
+- `/api/health` → JSON `{"status":"ok"}` (ou équivalent)
+- `/` → `Content-Type: text/html` (page React), pas `{"detail":"Not Found"}`
 
 ---
 
@@ -87,131 +94,88 @@ curl.exe https://teslapi.axelproject.fr/.well-known/appspecific/com.tesla.3p.pub
 ssh ubuntu@51.254.128.11
 ```
 
-Ou avec le nom du VPS :
-
-```bash
-ssh ubuntu@vps-2c7db76a.vps.ovh.net
-```
-
 ---
 
 ## Chemins sur le VPS
 
-- Projet : `~/LMDCVTC_TeslaFleet`
-- Backend : `~/LMDCVTC_TeslaFleet/backend`
-- Env prod : `~/LMDCVTC_TeslaFleet/backend/.env.prod`
-- Clé privée Tesla : `~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem`
+| Élément | Chemin |
+|---------|--------|
+| Projet | `~/LMDCVTC_TeslaFleet` |
+| Env backend | `~/LMDCVTC_TeslaFleet/backend/.env.prod` |
+| Env build frontend | `~/LMDCVTC_TeslaFleet/.env` (copie de `env.prod.example`) |
+| Clé privée Tesla | `~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem` |
+| Caddy | `/etc/caddy/Caddyfile` |
 
 ---
 
-## Backend (Docker)
+## Docker
 
-Se placer dans le projet :
+### Backend + frontend (recommandé)
 
 ```bash
 cd ~/LMDCVTC_TeslaFleet
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml down
 ```
 
-Lancer le backend :
+### Backend seul
 
 ```bash
 docker compose -f docker-compose.backend.yml up -d --build
 ```
 
-Arrêter :
-
-```bash
-docker compose -f docker-compose.backend.yml down
-```
-
-Voir les logs :
-
-```bash
-docker compose -f docker-compose.backend.yml logs -f
-```
-
-Vérifier que le backend répond (sur le VPS) :
-
-```bash
-curl http://localhost:8000/api/health
-curl http://localhost:8000/.well-known/appspecific/com.tesla.3p.public-key.pem
-```
-
 ---
 
-## Caddy (HTTPS)
+## Caddy (HTTPS + routage)
 
-Configurer le domaine (remplacer `teslapi.axelproject.fr` par ton domaine) :
+Exemple complet (déjà dans `deploy/Caddyfile.example`) :
 
-```bash
-sudo nano /etc/caddy/Caddyfile
-```
-
-Exemple de contenu :
-
-```
+```caddy
 teslapi.axelproject.fr {
-    reverse_proxy localhost:8000
+	handle /api/* {
+		reverse_proxy localhost:8000
+	}
+
+	handle /.well-known/* {
+		reverse_proxy localhost:8000
+	}
+
+	handle {
+		reverse_proxy localhost:8080
+	}
 }
 ```
-
-Recharger Caddy :
 
 ```bash
 sudo systemctl reload caddy
 ```
 
-Vérifier le statut :
+---
+
+## Dépannage rapide
+
+| Symptôme | Cause probable | Action |
+|----------|----------------|--------|
+| `{"detail":"Not Found"}` sur `/` | Caddy envoie tout vers `:8000` | Mettre à jour le Caddyfile (frontend → `:8080`) |
+| `failed to bind ... :80` | Conflit Caddy / ancien compose | Utiliser `8080:80` dans `docker-compose.prod.yml` |
+| UI charge mais API en erreur | Mauvais `VITE_API_BASE` au build | Corriger `.env`, puis `docker compose ... up -d --build` |
+| Frontend absent dans `docker ps` | Échec au démarrage (port, build) | `docker compose -f docker-compose.prod.yml logs frontend` |
+
+Vérifier ce qui occupe le port 80 :
 
 ```bash
-sudo systemctl status caddy
+sudo ss -tlnp | grep ':80 '
+docker ps -a
 ```
-
----
-
-## Copier des fichiers depuis ton PC (Windows)
-
-Dans **PowerShell**, depuis ton PC :
-
-Clé privée Tesla vers le VPS :
-
-```powershell
-scp D:\Code\tesla-fleet\backend\app\keys\private\private_key.pem ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem
-```
-
-Fichier `.env.prod` vers le VPS :
-
-```powershell
-scp D:\Code\tesla-fleet\backend\.env.prod ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/.env.prod
-```
-
-Adapte les chemins (`D:\Code\tesla-fleet`) si ton projet est ailleurs.
-
----
-
-## Vérifications utiles
-
-Sur le VPS (après connexion SSH) :
-
-- Fichier clé présent : `ls -la ~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem`
-- Conteneurs : `docker ps`
-- Logs backend : `docker compose -f docker-compose.backend.yml logs -f backend`
-
-Depuis ton PC (PowerShell) :
-
-- Test API par IP : `curl.exe http://51.254.128.11:8000/api/health`
-- Test DNS : `nslookup teslapi.axelproject.fr 8.8.8.8`
-- Test HTTPS (une fois le domaine résolu et Caddy en place) : `curl.exe https://teslapi.axelproject.fr/api/health`
 
 ---
 
 ## Récap rapide
 
-| Action              | Commande |
-|---------------------|----------|
-| Se connecter au VPS | `ssh ubuntu@51.254.128.11` |
-| Aller au projet     | `cd ~/LMDCVTC_TeslaFleet` |
-| Pull + rebuild      | `git pull origin main` puis `docker compose -f docker-compose.backend.yml up -d --build` |
-| Démarrer le backend | `docker compose -f docker-compose.backend.yml up -d --build` |
-| Voir les logs       | `docker compose -f docker-compose.backend.yml logs -f` |
-| Recharger Caddy     | `sudo systemctl reload caddy` |
+| Action | Commande |
+|--------|----------|
+| SSH | `ssh ubuntu@51.254.128.11` |
+| Pull + deploy | `cd ~/LMDCVTC_TeslaFleet && git pull && docker compose -f docker-compose.prod.yml up -d --build` |
+| Reload Caddy | `sudo systemctl reload caddy` |
+| Logs | `docker compose -f docker-compose.prod.yml logs -f` |
