@@ -20,7 +20,7 @@ Fichier de référence : [`deploy/Caddyfile.example`](../deploy/Caddyfile.exampl
 
 ## Déploiement complet (étapes dans l’ordre)
 
-### 1. Sur le PC — Git
+### 1. Sur le PC - Git
 
 ```powershell
 cd D:\Code\tesla-fleet
@@ -29,14 +29,14 @@ git commit -m "votre message"
 git push origin main
 ```
 
-### 2. Sur le PC — Fichiers sensibles (si modifiés)
+### 2. Sur le PC - Fichiers sensibles (si modifiés)
 
 ```powershell
 scp D:\Code\tesla-fleet\backend\.env.prod ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/.env.prod
 scp D:\Code\tesla-fleet\backend\app\keys\private\private_key.pem ubuntu@51.254.128.11:~/LMDCVTC_TeslaFleet/backend/keys/private/private_key.pem
 ```
 
-### 3. Sur le VPS — Pull, variables, Docker
+### 3. Sur le VPS - Pull, variables, Docker
 
 ```bash
 ssh ubuntu@51.254.128.11
@@ -54,7 +54,7 @@ docker ps
 Le conteneur `frontend` doit être **Up** et mapper `0.0.0.0:8080->80/tcp`.  
 Si vous voyez `address already in use` sur le port **80**, c’est normal avec l’ancienne config : le repo utilise maintenant **8080**.
 
-### 4. Sur le VPS — Caddy
+### 4. Sur le VPS - Caddy
 
 ```bash
 sudo cp ~/LMDCVTC_TeslaFleet/deploy/Caddyfile.example /etc/caddy/Caddyfile

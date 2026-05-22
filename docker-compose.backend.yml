@@ -1,5 +1,5 @@
 # Backend seul (port 8000). Utile si le frontend n'est pas déployé via Docker.
-# Avec Caddy : reverse_proxy API uniquement — voir deploy/Caddyfile.example (version API-only).
+# Avec Caddy : reverse_proxy API uniquement - voir deploy/Caddyfile.example (version API-only).
 
 services:
   backend:

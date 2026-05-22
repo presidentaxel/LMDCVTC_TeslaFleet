@@ -214,7 +214,7 @@ Assurez-vous que `APP_DOMAIN` est défini avant d'appeler `/api/fleet/partner/re
 
 Sur le VPS, **Caddy** utilise les ports 80/443. Le frontend Docker doit écouter sur **8080**, pas 80.
 
-1. `cp env.prod.example .env` — définir `VITE_API_BASE=https://votre-domaine.com/api`
+1. `cp env.prod.example .env` - définir `VITE_API_BASE=https://votre-domaine.com/api`
 2. `docker compose -f docker-compose.prod.yml up -d --build`
 3. Copier `deploy/Caddyfile.example` vers `/etc/caddy/Caddyfile` et recharger Caddy
 

@@ -1,4 +1,4 @@
-"""Routes API — flotte business (token + véhicules + commandes)."""
+"""Routes API - flotte business (token + véhicules + commandes)."""
 from __future__ import annotations
 
 import base64
@@ -32,7 +32,7 @@ CONSENT_DOCS = "https://developer.tesla.com/docs/fleet-api/authentication/third-
 
 @router.get("/consent-guide")
 async def consent_guide():
-    """Étapes consentement — se fait d'abord sur Tesla for Business, puis code ici."""
+    """Étapes consentement - se fait d'abord sur Tesla for Business, puis code ici."""
     return {
         "title": "Consentement Tesla for Business",
         "note": (

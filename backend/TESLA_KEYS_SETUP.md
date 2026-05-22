@@ -14,8 +14,8 @@ python scripts/generate_tesla_keys.py
 ```
 
 Cela créera :
-- `app/keys/private/private_key.pem` (clé privée EC prime256v1 — gardez-la secrète !)
-- `app/keys/public/public_key.pem` (clé publique — à héberger à l'URL well-known)
+- `app/keys/private/private_key.pem` (clé privée EC prime256v1 - gardez-la secrète !)
+- `app/keys/public/public_key.pem` (clé publique - à héberger à l'URL well-known)
 
 ### Option 2: Utiliser une clé privée existante
 

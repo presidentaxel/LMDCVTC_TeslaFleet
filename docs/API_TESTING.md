@@ -1,6 +1,6 @@
 # Tester l’API (curl & UI)
 
-## GET — lire une information
+## GET - lire une information
 
 ```bash
 curl http://localhost:8000/api/health
@@ -8,7 +8,7 @@ curl http://localhost:8000/api/business/status
 curl http://localhost:8000/api/business/consent-guide
 ```
 
-## POST — déclencher une action
+## POST - déclencher une action
 
 ### Échanger le code business (après consentement Tesla)
 
@@ -40,7 +40,7 @@ curl -X POST http://localhost:8000/api/fleet/partner/register
 
 ## Swagger
 
-http://localhost:8000/docs — bouton **Try it out** sur chaque route.
+http://localhost:8000/docs - bouton **Try it out** sur chaque route.
 
 ## UI (recommandé)
 

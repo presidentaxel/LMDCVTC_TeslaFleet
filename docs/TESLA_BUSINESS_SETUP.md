@@ -1,4 +1,4 @@
-# Configuration Tesla for Business — Gestion LMDC VTC
+# Configuration Tesla for Business - Gestion LMDC VTC
 
 Guide local → production (`teslapi.axelproject.fr`).
 
@@ -7,7 +7,7 @@ Guide local → production (`teslapi.axelproject.fr`).
 | Variable | Valeur |
 |----------|--------|
 | `TESLA_CLIENT_ID` | `0517a56f-d3fd-43f5-9b80-5e15b0488d5f` |
-| `TESLA_CLIENT_SECRET` | Secret affiché dans le portail (œil) — **jamais dans Git** |
+| `TESLA_CLIENT_SECRET` | Secret affiché dans le portail (œil) - **jamais dans Git** |
 
 ## Le consentement : ordre des opérations
 

@@ -1,4 +1,4 @@
-# Utile — Gestion LMDC VTC / Tesla Fleet
+# Utile - Gestion LMDC VTC / Tesla Fleet
 
 Référence rapide : commandes **Bash** (Linux, Mac, VPS) et **PowerShell** (Windows).  
 Doc détaillée : `docs/TESLA_BUSINESS_SETUP.md`, `docs/API_TESTING.md`, `docs/VEHICLE_COMMANDS.md`, `docs/OVH_SSH_COMMANDS.md`.
@@ -12,7 +12,7 @@ Doc détaillée : `docs/TESLA_BUSINESS_SETUP.md`, `docs/API_TESTING.md`, `docs/V
 | App Tesla Developer | **GestionLMDCVTC** |
 | Client ID OAuth | `0517a56f-d3fd-43f5-9b80-5e15b0488d5f` |
 | Domaine API prod | `teslapi.axelproject.fr` |
-| VPS OVH | `51.254.128.11` — user `ubuntu` |
+| VPS OVH | `51.254.128.11` - user `ubuntu` |
 | Dossier VPS | `~/LMDCVTC_TeslaFleet` |
 | Région Tesla | `eu` (France) |
 
@@ -32,7 +32,7 @@ Cocher au fur et à mesure.
 ### Fichiers locaux (non versionnés)
 
 - [ ] `backend/.env.dev` (copie de `backend/env.dev.example`)
-- [ ] `backend/.env.prod` (copie de `backend/env.prod.example`) — prod uniquement
+- [ ] `backend/.env.prod` (copie de `backend/env.prod.example`) - prod uniquement
 - [ ] `frontend/.env` avec `VITE_API_BASE=...`
 - [ ] `backend/app/keys/private/private_key.pem` (EC prime256v1, voir génération ci-dessous)
 
@@ -44,13 +44,13 @@ Cocher au fur et à mesure.
 - [ ] `docker compose -f docker-compose.prod.yml up -d --build` (frontend sur **8080**, pas 80)
 - [ ] `APP_DOMAIN=teslapi.axelproject.fr` et `PUBLIC_KEY_URL=https://teslapi.axelproject.fr/.well-known/...` dans `backend/.env.prod`
 - [ ] **Enregistrement domaine Tesla** : `POST /api/fleet/partner/register` (UI Configuration → Infra ou curl)
-- [ ] **Clé virtuelle** sur chaque véhicule (pour lock, musique, etc.) — doc Tesla Virtual Keys
+- [ ] **Clé virtuelle** sur chaque véhicule (pour lock, musique, etc.) - doc Tesla Virtual Keys
 
 ### Optionnel
 
 - [ ] Supabase configuré (`TOKEN_STORE_TYPE=supabase`) si multi-utilisateurs / persistance tokens
 - [ ] Backend seul : `docker compose -f docker-compose.backend.yml` (sans UI Docker)
-- [ ] Refactor gros fichiers backend (`routes_auth`, `oauth_third_party`) — dette technique
+- [ ] Refactor gros fichiers backend (`routes_auth`, `oauth_third_party`) - dette technique
 
 ---
 
@@ -117,7 +117,7 @@ PUBLIC_KEY_URL=http://localhost:8000/.well-known/appspecific/com.tesla.3p.public
 
 ### 1.2 Lancer backend + frontend
 
-**Bash — terminal 1 (API)**
+**Bash - terminal 1 (API)**
 
 ```bash
 cd "$PROJECT/backend"
@@ -126,14 +126,14 @@ export ENV=dev
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Bash — terminal 2 (UI)**
+**Bash - terminal 2 (UI)**
 
 ```bash
 cd "$PROJECT/frontend"
 npm run dev
 ```
 
-**PowerShell — terminal 1**
+**PowerShell - terminal 1**
 
 ```powershell
 cd "$env:PROJECT\backend"
@@ -142,7 +142,7 @@ $env:ENV = "dev"
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**PowerShell — terminal 2**
+**PowerShell - terminal 2**
 
 ```powershell
 cd "$env:PROJECT\frontend"
@@ -203,7 +203,7 @@ Fichier : `docker-compose.yml` + `backend/.env.dev`.
 
 ---
 
-## 2. API — curl (local & prod)
+## 2. API - curl (local & prod)
 
 Remplacer `BASE` par `http://localhost:8000` ou `https://teslapi.axelproject.fr`.
 
@@ -330,7 +330,7 @@ Liste complète : `docs/VEHICLE_COMMANDS.md`.
 
 ## 3. Déploiement OVH (prod)
 
-### 3.1 Git — pousser le code
+### 3.1 Git - pousser le code
 
 **Bash**
 
@@ -467,7 +467,7 @@ docker compose -f docker-compose.backend.yml logs -f --tail=100 backend
 docker compose -f docker-compose.prod.yml exec frontend cat /var/log/nginx/error.log
 ```
 
-**Caddy** (HTTPS, routage — pas Docker) :
+**Caddy** (HTTPS, routage - pas Docker) :
 
 ```bash
 sudo journalctl -u caddy -f
@@ -503,11 +503,11 @@ Lister les routes : `curl -s http://localhost:8000/openapi.json | grep business`
 | SSH VPS | `ssh ubuntu@51.254.128.11` | `ssh ubuntu@51.254.128.11` |
 | API health local | `curl -s localhost:8000/api/health` | `Invoke-RestMethod http://localhost:8000/api/health` |
 | API health prod | `curl -s https://teslapi.axelproject.fr/api/health` | `curl.exe https://teslapi.axelproject.fr/api/health` |
-| Rebuild Docker VPS | `docker compose -f docker-compose.prod.yml up -d --build` | — (après SSH) |
-| Logs backend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 backend` | — (après SSH) |
-| Logs frontend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 frontend` | — (après SSH) |
-| Logs Caddy | `sudo journalctl -u caddy -f` | — |
-| Reload Caddy | `sudo systemctl reload caddy` | — |
+| Rebuild Docker VPS | `docker compose -f docker-compose.prod.yml up -d --build` | - (après SSH) |
+| Logs backend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 backend` | - (après SSH) |
+| Logs frontend VPS | `docker compose -f docker-compose.prod.yml logs -f --tail=100 frontend` | - (après SSH) |
+| Logs Caddy | `sudo journalctl -u caddy -f` | - |
+| Reload Caddy | `sudo systemctl reload caddy` | - |
 | UI locale | ouvrir http://localhost:5173 | idem |
 | Swagger | http://localhost:8000/docs | idem |
 

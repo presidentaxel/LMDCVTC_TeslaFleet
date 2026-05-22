@@ -1,19 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getBusinessStatus, listBusinessVehicles } from "../../lib/api";
+import { getFleetAccessStatus, listFleetVehicles, parseVehicleList } from "../../lib/api";
 
 export default function FleetPage() {
-  const [status, setStatus] = useState<Awaited<ReturnType<typeof getBusinessStatus>> | null>(null);
+  const [status, setStatus] = useState<Awaited<ReturnType<typeof getFleetAccessStatus>> | null>(null);
   const [count, setCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getBusinessStatus().then(setStatus).catch(() => setStatus(null));
-    listBusinessVehicles()
-      .then((d) => {
-        const list = Array.isArray(d.response) ? d.response : [];
-        setCount(list.length);
-      })
+    getFleetAccessStatus().then(setStatus).catch(() => setStatus(null));
+    listFleetVehicles()
+      .then((d) => setCount(parseVehicleList(d).length))
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
@@ -21,7 +18,7 @@ export default function FleetPage() {
     <>
       <header className="page-header">
         <h1>Flotte</h1>
-        <p>Vue d&apos;ensemble AXEL PROJECT — véhicules possédés et gérés.</p>
+        <p>Vue d&apos;ensemble AXEL PROJECT — token M2M partenaire.</p>
       </header>
 
       <div className="tabs">
@@ -36,7 +33,7 @@ export default function FleetPage() {
       {!status?.token_active && (
         <div className="alert alert-info">
           Flotte non connectée.{" "}
-          <Link to="/setup">Configurer le consentement</Link>
+          <Link to="/setup">Configuration → Token M2M</Link>
         </div>
       )}
 
@@ -45,11 +42,13 @@ export default function FleetPage() {
       <div className="card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
         <div>
           <div style={{ fontSize: 12, color: "#5c5e62" }}>Véhicules</div>
-          <div style={{ fontSize: 32, fontWeight: 600 }}>{count ?? "—"}</div>
+          <div style={{ fontSize: 32, fontWeight: 600 }}>{count ?? "-"}</div>
         </div>
         <div>
-          <div style={{ fontSize: 12, color: "#5c5e62" }}>API</div>
-          <div style={{ fontSize: 14 }}>{status?.audience?.split("/").pop() ?? "EU"}</div>
+          <div style={{ fontSize: 12, color: "#5c5e62" }}>Mode API</div>
+          <div style={{ fontSize: 14 }}>
+            {status?.active_mode === "partner" ? "M2M partenaire" : status?.active_mode ?? "—"}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 12, color: "#5c5e62" }}>Connexion</div>

@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     # Scopes demandés pour le token partenaire (client_credentials). Tous les scopes Tesla (vehicle_specs = Partner only).
     PARTNER_SCOPES: str = "openid offline_access user_data vehicle_device_data vehicle_location vehicle_cmds vehicle_charging_cmds vehicle_specs energy_device_data energy_cmds enterprise_management"
 
-    # Third-Party Business (flotte VTC) — auth_code depuis Tesla for Business > Consent Management
+    # Third-Party Business (flotte VTC) - auth_code depuis Tesla for Business > Consent Management
     TESLA_BUSINESS_AUTH_CODE: str | None = None
     BUSINESS_SCOPES: str = (
         "openid offline_access user_data vehicle_device_data vehicle_location "

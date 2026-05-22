@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { getCommandCatalog, runCommand } from "../../lib/api";
+import { getFleetCommandCatalog, runFleetCommand } from "../../lib/api";
 
 export default function CommandsPage() {
   const [params] = useSearchParams();
@@ -18,7 +18,7 @@ export default function CommandsPage() {
   }, [vehicleFromUrl]);
 
   useEffect(() => {
-    getCommandCatalog()
+    getFleetCommandCatalog()
       .then((c) => {
         setCatalog(c.categories);
         const first = Object.keys(c.categories)[0];
@@ -43,7 +43,7 @@ export default function CommandsPage() {
         if (needsBody) {
           body = JSON.parse(bodyJson || "{}") as Record<string, unknown>;
         }
-        const res = await runCommand(vehicleRef.trim(), commandName, body);
+        const res = await runFleetCommand(vehicleRef.trim(), commandName, body);
         setResult(JSON.stringify(res, null, 2));
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));

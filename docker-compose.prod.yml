@@ -1,5 +1,5 @@
 # Production : backend (8000) + frontend nginx (8080 sur l'hôte).
-# Caddy occupe les ports 80/443 — voir deploy/Caddyfile.example
+# Caddy occupe les ports 80/443 - voir deploy/Caddyfile.example
 #
 # Avant le build frontend :
 #   cp env.prod.example .env

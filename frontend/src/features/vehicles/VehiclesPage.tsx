@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getBusinessStatus, listBusinessVehicles } from "../../lib/api";
+import {
+  getFleetAccessStatus,
+  listFleetVehicles,
+  parseVehicleList,
+} from "../../lib/api";
 
 type VehicleRow = {
   id?: number | string;
@@ -14,20 +18,22 @@ export default function VehiclesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [mode, setMode] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const st = await getBusinessStatus();
+      const st = await getFleetAccessStatus();
       setConnected(st.token_active);
+      setMode(st.active_mode);
       if (!st.token_active) {
         setRows([]);
         return;
       }
-      const data = await listBusinessVehicles();
-      const list = (Array.isArray(data.response) ? data.response : []) as VehicleRow[];
+      const data = await listFleetVehicles();
+      const list = parseVehicleList(data) as VehicleRow[];
       setRows(list);
       if (list[0]?.id != null) setSelectedId(String(list[0].id));
       else if (list[0]?.vin) setSelectedId(list[0].vin!);
@@ -47,7 +53,10 @@ export default function VehiclesPage() {
       <header className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1>Véhicules</h1>
-          <p>Liste des véhicules de la flotte business.</p>
+          <p>
+            Liste via token API
+            {mode ? ` (${mode === "partner" ? "M2M" : "business"})` : ""} — Bearer géré par le backend.
+          </p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
           Actualiser
@@ -56,7 +65,8 @@ export default function VehiclesPage() {
 
       {!connected && (
         <div className="alert alert-info">
-          <Link to="/setup">Configurer le consentement</Link> pour afficher les véhicules.
+          <Link to="/setup">Configuration → Token M2M</Link> : cliquez « Obtenir token M2M » puis « Tester liste
+          véhicules ».
         </div>
       )}
       {error && <div className="alert alert-error">{error}</div>}
@@ -67,7 +77,9 @@ export default function VehiclesPage() {
         ) : rows.length === 0 ? (
           <div className="empty-state">
             <h3>Aucun véhicule</h3>
-            <p>Ajoutez un véhicule dans Tesla for Business ou vérifiez le consentement.</p>
+            <p>
+              Véhicules dans Tesla for Business, token M2M obtenu, et domaine enregistré (onglet Infra).
+            </p>
           </div>
         ) : (
           <table className="data-table">
@@ -85,10 +97,14 @@ export default function VehiclesPage() {
                 const id = String(v.id ?? v.vin ?? "");
                 return (
                   <tr key={id}>
-                    <td>{v.display_name ?? "—"}</td>
-                    <td><code style={{ fontSize: 12 }}>{v.vin ?? "—"}</code></td>
-                    <td>{v.state ?? "—"}</td>
-                    <td><code style={{ fontSize: 12 }}>{id}</code></td>
+                    <td>{v.display_name ?? "-"}</td>
+                    <td>
+                      <code style={{ fontSize: 12 }}>{v.vin ?? "-"}</code>
+                    </td>
+                    <td>{v.state ?? "-"}</td>
+                    <td>
+                      <code style={{ fontSize: 12 }}>{id}</code>
+                    </td>
                     <td>
                       <button
                         type="button"
@@ -109,7 +125,7 @@ export default function VehiclesPage() {
 
       {selectedId && (
         <p style={{ marginTop: 16, fontSize: 14 }}>
-          Véhicule sélectionné : <code>{selectedId}</code> —{" "}
+          Véhicule sélectionné : <code>{selectedId}</code> -{" "}
           <Link to={`/commands?vehicle=${encodeURIComponent(selectedId)}`}>Commandes</Link>
         </p>
       )}

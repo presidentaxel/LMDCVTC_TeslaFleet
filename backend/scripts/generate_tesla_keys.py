@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script pour générer une paire de clés EC (prime256v1) pour Tesla Fleet API.
-Tesla exige des clés EC prime256v1 (secp256r1) — les clés RSA ne sont pas acceptées.
+Tesla exige des clés EC prime256v1 (secp256r1) - les clés RSA ne sont pas acceptées.
 Utilisez ce script si vous n'avez pas encore de clés.
 """
 from cryptography.hazmat.primitives import serialization

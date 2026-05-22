@@ -10,8 +10,13 @@ from app.auth.store_factory import get_token_store
 from app.auth.token_store import TokenStore
 from app.auth.supabase_store import SupabaseTokenStore
 from typing import Union
-from app.auth.partner_tokens import get_partner_token_cached
+from app.auth.partner_tokens import PARTNER_CACHE_KEY, get_partner_token_cached
+from app.auth.business_store import BUSINESS_CACHE_KEY
+from app.schemas.fleet import FleetAccessStatusResponse, PartnerStatusResponse
+from app.schemas.business import VehicleCommandRequest
 from app.tesla.client import TeslaClient
+from app.tesla.command_http import post_vehicle_command
+from app.tesla.commands.catalog import COMMANDS, get_command, list_by_category
 
 router = APIRouter(
     prefix="/fleet",
@@ -53,7 +58,129 @@ async def fleet_status(store: TokenStore = Depends(get_store)):
         raise HTTPException(status_code=502, detail=f"Fleet status error: {e}")
 
 # ============================================================================
-# ENDPOINTS PARTENAIRE (M2M)
+# TOKEN M2M (PARTNER) — flotte propre, sans consent business
+# Doc: https://developer.tesla.com/docs/fleet-api/authentication/partner-tokens
+# ============================================================================
+
+_PARTNER_M2M_NOTE = (
+    "Token partenaire (client_credentials). Pour votre propre flotte AXEL PROJECT, "
+    "utilisez ce mode en priorité. Le consent Tesla for Business sert aux apps tierces."
+)
+
+
+@router.get("/partner/status", response_model=PartnerStatusResponse)
+async def partner_status(store: TokenStore = Depends(get_store)):
+    """Statut du token M2M partenaire (cache backend, renouvelé automatiquement)."""
+    cached = store.get(PARTNER_CACHE_KEY)
+    active = store.valid(cached)
+    preview = None
+    if active and cached:
+        preview = cached["access_token"][:12] + "..."
+    return PartnerStatusResponse(
+        token_active=active,
+        access_token_preview=preview,
+        expires_in=cached.get("expires_in") if cached else None,
+        scope=cached.get("scope") if cached else None,
+        client_id_set=bool(settings.TESLA_CLIENT_ID or settings.TP_CLIENT_ID),
+        client_secret_set=bool(settings.TESLA_CLIENT_SECRET or settings.TP_CLIENT_SECRET),
+        audience=settings.tesla_audience_for(),
+        note=_PARTNER_M2M_NOTE,
+    )
+
+
+@router.get("/access/status", response_model=FleetAccessStatusResponse)
+async def fleet_access_status(store: TokenStore = Depends(get_store)):
+    """Partenaire M2M en priorité, sinon token business (consent)."""
+    partner = store.get(PARTNER_CACHE_KEY)
+    business = store.get(BUSINESS_CACHE_KEY)
+    partner_ok = store.valid(partner)
+    business_ok = store.valid(business)
+    mode = "partner" if partner_ok else ("business" if business_ok else None)
+    src = partner if partner_ok else (business if business_ok else None)
+    preview = None
+    if src:
+        preview = src["access_token"][:12] + "..."
+    return FleetAccessStatusResponse(
+        token_active=bool(mode),
+        active_mode=mode,
+        partner_token_active=partner_ok,
+        business_token_active=business_ok,
+        access_token_preview=preview,
+        expires_in=src.get("expires_in") if src else None,
+        scope=src.get("scope") if src else None,
+        client_id_set=bool(settings.TESLA_CLIENT_ID or settings.TP_CLIENT_ID),
+        client_secret_set=bool(settings.TESLA_CLIENT_SECRET or settings.TP_CLIENT_SECRET),
+        audience=settings.tesla_audience_for(),
+    )
+
+
+@router.delete("/partner/token")
+async def partner_revoke_token(store: TokenStore = Depends(get_store)):
+    store.delete(PARTNER_CACHE_KEY)
+    return {"ok": True, "message": "Token partenaire supprimé du cache. Prochain appel = nouveau token M2M."}
+
+
+@router.get("/vehicles")
+async def fleet_vehicles(
+    page: int = 1,
+    page_size: int = 50,
+    store: TokenStore = Depends(get_store),
+):
+    """
+    Liste véhicules via token partenaire M2M (pas de consent business).
+    Même chemin que les tests / Postman : GET /api/fleet/vehicles
+    """
+    try:
+        token = await get_partner_token_cached(store)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    client = TeslaClient(access_token=token)
+    try:
+        return await client.vehicles_list(page=page, page_size=page_size)
+    except httpx.HTTPStatusError as e:
+        body = ""
+        if e.response is not None:
+            try:
+                body = e.response.text[:500]
+            except Exception:
+                body = str(e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Erreur liste véhicules (token M2M): {e.response.status_code if e.response else '?'} {body}",
+        ) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur liste véhicules: {e}") from e
+
+
+@router.get("/commands/catalog")
+async def fleet_commands_catalog():
+    return {"categories": list_by_category(), "total": len(COMMANDS)}
+
+
+@router.post("/vehicles/{vehicle_ref}/commands/{command_name}")
+async def fleet_vehicle_command(
+    vehicle_ref: str,
+    command_name: str,
+    payload: VehicleCommandRequest | None = None,
+    store: TokenStore = Depends(get_store),
+):
+    """Commande véhicule via token partenaire M2M."""
+    cmd = get_command(command_name)
+    if not cmd and command_name != "wake_up":
+        raise HTTPException(status_code=404, detail=f"Commande inconnue: {command_name}")
+    try:
+        token = await get_partner_token_cached(store)
+    except RuntimeError as e:
+        raise HTTPException(status_code=401, detail=str(e)) from e
+    body = (payload.body if payload else None) or {}
+    try:
+        return await post_vehicle_command(token, vehicle_ref, command_name, body)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+# ============================================================================
+# ENDPOINTS PARTENAIRE (M2M) — debug / infra
 # ============================================================================
 
 @router.get("/partner/telemetry-errors")
