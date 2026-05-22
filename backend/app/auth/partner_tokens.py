@@ -70,7 +70,6 @@ async def fetch_partner_token(use_tp_credentials: bool = False) -> PartnerToken:
                 f"3. Les credentials sont pour un environnement différent (production vs staging)\n"
                 f"4. Le domaine n'a pas encore été enregistré (peut être requis avant d'obtenir des tokens)\n"
                 f"5. Vous utilisez peut-être les mauvais credentials - vérifiez que vous utilisez ceux du portail Tesla Developer\n\n"
-                f"Votre CLIENT_ID devrait être: cacad6ff-48dd-4e8f-b521-8180d0865b94\n"
                 f"CLIENT_ID utilisé: {client_id[:8]}...\n\n"
                 f"Réponse Tesla: {error_body}"
             )

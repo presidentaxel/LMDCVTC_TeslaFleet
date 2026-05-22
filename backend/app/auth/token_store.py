@@ -45,3 +45,12 @@ class TokenStore:
 
     def valid(self, token: dict | None) -> bool:
         return bool(token and token.get("access_token") and token.get("expires_at", 0) > time.time()+30)
+
+    def delete(self, key: str) -> None:
+        if self.r and not self._use_mem:
+            try:
+                self.r.delete(key)
+                return
+            except Exception:
+                self._use_mem = True
+        self._mem.pop(key, None)
